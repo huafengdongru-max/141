@@ -1,0 +1,6 @@
+
+{
+  "name": "MemeMagic AI",
+  "description": "AI 驱动的梗图生成器，支持自然拼读教育模式。",
+  "requestFramePermissions": ["camera"]
+}
