@@ -1,11 +1,10 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { SYSTEM_PROMPT } from "./constants";
 import { SuggestedCaption } from "./types";
 
 export const generateMagicCaptions = async (base64Image: string, isKidMode: boolean): Promise<SuggestedCaption[]> => {
-  // 直接从 process.env 获取，无需额外配置，Netlify 会自动注入
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  // 必须确保 API_KEY 已在 Netlify 环境变量中设置
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   
   try {
     const response = await ai.models.generateContent({
@@ -17,11 +16,11 @@ export const generateMagicCaptions = async (base64Image: string, isKidMode: bool
             {
               inlineData: {
                 mimeType: "image/jpeg",
-                data: base64Image.split(',')[1] || base64Image
+                data: base64Image.includes(',') ? base64Image.split(',')[1] : base64Image
               }
             },
             {
-              text: `Mode: ${isKidMode ? 'KID_PHONICS' : 'WITY_MEME'}. Analyze image and give 5 caption pairs.`
+              text: `当前模式: ${isKidMode ? '儿童拼读学习 (CVC 单词)' : '幽默创意梗图'}。请分析图片并生成 5 组 JSON 格式的配文。`
             }
           ]
         }
@@ -34,8 +33,8 @@ export const generateMagicCaptions = async (base64Image: string, isKidMode: bool
           items: {
             type: Type.OBJECT,
             properties: {
-              top: { type: Type.STRING },
-              bottom: { type: Type.STRING }
+              top: { type: Type.STRING, description: "顶部短语" },
+              bottom: { type: Type.STRING, description: "底部核心笑点" }
             },
             required: ["top", "bottom"]
           }
@@ -43,9 +42,10 @@ export const generateMagicCaptions = async (base64Image: string, isKidMode: bool
       }
     });
 
-    return JSON.parse(response.text || "[]") as SuggestedCaption[];
+    const text = response.text;
+    return JSON.parse(text || "[]") as SuggestedCaption[];
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("Gemini 魔法施法失败:", error);
     throw error;
   }
 };
